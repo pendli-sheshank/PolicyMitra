@@ -16,9 +16,21 @@ local Postgres + pgvector instance and a small synthetic 3-insurer corpus. Verif
 - 48/48 tests passing (36 unit, 12 integration)
 - Full Q&A / Recommend / Compare / Agent-Copilot flows verified in a real browser
 
-No `ANTHROPIC_API_KEY` is required to run ingestion, retrieval, comparison, recommendation, or
-the eval suite — generation-dependent steps (Q&A answers, drafting) return a clean `503` without
-one, and start working the moment a key is added (see `docs/architecture.md` #11).
+No LLM API key is required to run ingestion, retrieval, comparison, recommendation, or the eval
+suite — generation-dependent steps (Q&A answers, drafting) return a clean `503` without one, and
+start working the moment a key is added (see `docs/architecture.md` #11).
+
+### Choosing an LLM provider
+
+The system supports two interchangeable providers, selected purely via `.env` — no code changes:
+
+| Provider | `.env` variables | Notes |
+|---|---|---|
+| Anthropic (default) | `ANTHROPIC_API_KEY`, `CLAUDE_MODEL` | Preferred automatically if both keys are set. |
+| OpenRouter | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` | One key, any model in [OpenRouter's catalog](https://openrouter.ai/models) (OpenAI, Google, Meta, Mistral, Anthropic, and more). |
+
+Set `LLM_PROVIDER=anthropic` or `LLM_PROVIDER=openrouter` to force a specific provider explicitly;
+leave it blank to auto-detect (see `docs/architecture.md` #12).
 
 ## Setup
 
