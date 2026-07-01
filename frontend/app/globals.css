@@ -1,0 +1,40 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+button {
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  background: #0d6efd;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+button:disabled {
+  background: #adb5bd;
+  cursor: not-allowed;
+}

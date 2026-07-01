@@ -1,0 +1,23 @@
+[project]
+name = "policymitra"
+version = "0.1.0"
+description = "RAG assistant for Indian health insurance"
+requires-python = ">=3.11"
+
+[tool.black]
+line-length = 130
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# B008: FastAPI's `param: X = Depends(get_x)` is the standard, documented
+# dependency-injection pattern, not the footgun this rule targets.
+ignore = ["B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

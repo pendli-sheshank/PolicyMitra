@@ -1,0 +1,82 @@
+# Hand-worked recommendation scenarios: expected_rank_order derived
+# independently by hand-computing _score_plan()'s weighted formula (budget
+# 0.4 / PED-wait 0.4 / sum-insured-availability 0.2) against the synthetic
+# corpus's actual published premium and PED-waiting-period figures (see
+# docs/PRD.md §11: "validate ranking logic against hand-worked scenarios
+# where you derive the right answer independently first").
+
+- id: rec-001
+  description: "Moderate budget, diabetes flagged, 5L sum insured"
+  profile:
+    age: 34
+    dependents: 2
+    city_tier: tier2
+    ped_flags: { "Diabetes Mellitus": true }
+    budget_annual_inr: 15000
+    sum_insured_target_inr: 500000
+  candidate_insurers:
+    - "Arogya Shield General Insurance"
+    - "Suraksha Health Insurance"
+    - "Nirvana Care Insurance"
+  expected_top_pick: "Suraksha Health Insurance"
+  expected_rank_order:
+    - "Suraksha Health Insurance"
+    - "Arogya Shield General Insurance"
+    - "Nirvana Care Insurance"
+
+- id: rec-002
+  description: "Tight budget, cataract flagged, 5L sum insured"
+  profile:
+    age: 40
+    dependents: 0
+    city_tier: tier3
+    ped_flags: { "Cataract": true }
+    budget_annual_inr: 9000
+    sum_insured_target_inr: 500000
+  candidate_insurers:
+    - "Arogya Shield General Insurance"
+    - "Suraksha Health Insurance"
+    - "Nirvana Care Insurance"
+  expected_top_pick: "Nirvana Care Insurance"
+  expected_rank_order:
+    - "Nirvana Care Insurance"
+    - "Arogya Shield General Insurance"
+    - "Suraksha Health Insurance"
+
+- id: rec-003
+  description: "Older buyer, generous budget, cardiac condition, 10L sum insured"
+  profile:
+    age: 55
+    dependents: 1
+    city_tier: tier1
+    ped_flags: { "Cardiac Conditions": true }
+    budget_annual_inr: 30000
+    sum_insured_target_inr: 1000000
+  candidate_insurers:
+    - "Arogya Shield General Insurance"
+    - "Suraksha Health Insurance"
+    - "Nirvana Care Insurance"
+  expected_top_pick: "Suraksha Health Insurance"
+  expected_rank_order:
+    - "Suraksha Health Insurance"
+    - "Arogya Shield General Insurance"
+    - "Nirvana Care Insurance"
+
+- id: rec-004
+  description: "No PED flagged, tight budget, young buyer, 3L sum insured"
+  profile:
+    age: 28
+    dependents: 0
+    city_tier: tier2
+    ped_flags: {}
+    budget_annual_inr: 7000
+    sum_insured_target_inr: 300000
+  candidate_insurers:
+    - "Arogya Shield General Insurance"
+    - "Suraksha Health Insurance"
+    - "Nirvana Care Insurance"
+  expected_top_pick: "Nirvana Care Insurance"
+  expected_rank_order:
+    - "Nirvana Care Insurance"
+    - "Arogya Shield General Insurance"
+    - "Suraksha Health Insurance"

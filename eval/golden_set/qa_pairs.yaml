@@ -1,0 +1,186 @@
+# Golden Q&A set for retrieval recall@5, citation-accuracy, and
+# numeric-traceability evaluation (see docs/PRD.md §11, docs/skills.md).
+# expected_clause_ids: hand-annotated against the synthetic corpus, used by
+# eval/harness/run_retrieval_eval.py for a fully offline recall@5 check.
+# expected_answer_facts: hand-verified numeric facts, used as a deterministic
+# faithfulness proxy without needing an LLM judge.
+
+- id: qa-001
+  question: "What is the waiting period for cataract surgery under Arogya Shield?"
+  insurer: "Arogya Shield General Insurance"
+  expected_clause_ids: ["CL-WAIT-PED-TABLE#Cataract"]
+  expected_answer_facts:
+    - {value: "12", unit: "months"}
+    - {value: "40000", unit: "inr"}
+  expected_not_found: false
+  category: "waiting_period"
+
+- id: qa-002
+  question: "What is the sub-limit for diabetes mellitus under Arogya Shield Family Floater?"
+  insurer: "Arogya Shield General Insurance"
+  expected_clause_ids: ["CL-WAIT-PED-TABLE#Diabetes_Mellitus"]
+  expected_answer_facts:
+    - {value: "24", unit: "months"}
+    - {value: "100000", unit: "inr"}
+  expected_not_found: false
+  category: "sub_limit"
+
+- id: qa-003
+  question: "What is the room rent cap for Arogya Shield?"
+  insurer: "Arogya Shield General Insurance"
+  expected_clause_ids: ["CL-ROOM-RENT"]
+  expected_answer_facts:
+    - {value: "1", unit: "percent"}
+  expected_not_found: false
+  category: "room_rent"
+
+- id: qa-004
+  question: "Is cosmetic surgery covered under Arogya Shield?"
+  insurer: "Arogya Shield General Insurance"
+  expected_clause_ids: ["CL-EXCL-COSMETIC"]
+  expected_answer_facts: []
+  expected_not_found: false
+  category: "exclusions"
+
+- id: qa-005
+  question: "What is the co-pay for a 65 year old under Arogya Shield?"
+  insurer: "Arogya Shield General Insurance"
+  expected_clause_ids: ["CL-COPAY"]
+  expected_answer_facts:
+    - {value: "10", unit: "percent"}
+  expected_not_found: false
+  category: "co_pay"
+
+- id: qa-006
+  question: "How many network hospitals does Arogya Shield have?"
+  insurer: "Arogya Shield General Insurance"
+  expected_clause_ids: ["CL-NETWORK"]
+  expected_answer_facts: []
+  expected_not_found: false
+  category: "network"
+
+- id: qa-007
+  question: "What is the initial waiting period under Arogya Shield?"
+  insurer: "Arogya Shield General Insurance"
+  expected_clause_ids: ["CL-WAIT-INITIAL-30D"]
+  expected_answer_facts:
+    - {value: "30", unit: "days"}
+  expected_not_found: false
+  category: "waiting_period"
+
+- id: qa-008
+  question: "What is the waiting period for diabetes under Suraksha Health?"
+  insurer: "Suraksha Health Insurance"
+  expected_clause_ids: ["CL-WAIT-PED-TABLE#Diabetes_Mellitus"]
+  expected_answer_facts:
+    - {value: "12", unit: "months"}
+    - {value: "150000", unit: "inr"}
+  expected_not_found: false
+  category: "waiting_period"
+
+- id: qa-009
+  question: "Does Suraksha Health cover weight-loss surgery?"
+  insurer: "Suraksha Health Insurance"
+  expected_clause_ids: ["CL-EXCL-OBESITY"]
+  expected_answer_facts: []
+  expected_not_found: false
+  category: "exclusions"
+
+- id: qa-010
+  question: "What is the room rent limit under Suraksha Health?"
+  insurer: "Suraksha Health Insurance"
+  expected_clause_ids: ["CL-ROOM-RENT"]
+  expected_answer_facts: []
+  expected_not_found: false
+  category: "room_rent"
+
+- id: qa-011
+  question: "What is the co-pay for non-network hospital treatment under Suraksha Health?"
+  insurer: "Suraksha Health Insurance"
+  expected_clause_ids: ["CL-COPAY"]
+  expected_answer_facts:
+    - {value: "20", unit: "percent"}
+  expected_not_found: false
+  category: "co_pay"
+
+- id: qa-012
+  question: "How many network hospitals does Suraksha Health have?"
+  insurer: "Suraksha Health Insurance"
+  expected_clause_ids: ["CL-NETWORK"]
+  expected_answer_facts: []
+  expected_not_found: false
+  category: "network"
+
+- id: qa-013
+  question: "What is the waiting period for cardiac conditions under Suraksha Health?"
+  insurer: "Suraksha Health Insurance"
+  expected_clause_ids: ["CL-WAIT-PED-TABLE#Cardiac_Conditions"]
+  expected_answer_facts:
+    - {value: "24", unit: "months"}
+    - {value: "300000", unit: "inr"}
+  expected_not_found: false
+  category: "waiting_period"
+
+- id: qa-014
+  question: "What is the initial waiting period under Nirvana Care?"
+  insurer: "Nirvana Care Insurance"
+  expected_clause_ids: ["CL-WAIT-INITIAL-15D"]
+  expected_answer_facts:
+    - {value: "15", unit: "days"}
+  expected_not_found: false
+  category: "waiting_period"
+
+- id: qa-015
+  question: "What is the room rent sub-limit under Nirvana Care?"
+  insurer: "Nirvana Care Insurance"
+  expected_clause_ids: ["CL-ROOM-RENT"]
+  expected_answer_facts:
+    - {value: "2", unit: "percent"}
+    - {value: "5000", unit: "inr"}
+  expected_not_found: false
+  category: "room_rent"
+
+- id: qa-016
+  question: "What is the co-pay under Nirvana Care Smart Health?"
+  insurer: "Nirvana Care Insurance"
+  expected_clause_ids: ["CL-COPAY"]
+  expected_answer_facts:
+    - {value: "10", unit: "percent"}
+  expected_not_found: false
+  category: "co_pay"
+
+- id: qa-017
+  question: "Is maternity covered under Nirvana Care?"
+  insurer: "Nirvana Care Insurance"
+  expected_clause_ids: ["CL-EXCL-MATERNITY"]
+  expected_answer_facts:
+    - {value: "9", unit: "months"}
+  expected_not_found: false
+  category: "exclusions"
+
+- id: qa-018
+  question: "What is the waiting period for hypertension under Nirvana Care?"
+  insurer: "Nirvana Care Insurance"
+  expected_clause_ids: ["CL-WAIT-PED-TABLE#Hypertension"]
+  expected_answer_facts:
+    - {value: "24", unit: "months"}
+    - {value: "60000", unit: "inr"}
+  expected_not_found: false
+  category: "waiting_period"
+
+- id: qa-019
+  question: "Does Nirvana Care cover international travel medical emergencies?"
+  insurer: "Nirvana Care Insurance"
+  expected_clause_ids: []
+  expected_answer_facts: []
+  expected_not_found: true
+  category: "not_found"
+
+- id: qa-020
+  question: "What is the annual premium for a 5,00,000 sum insured for a 40 year old under Arogya Shield?"
+  insurer: "Arogya Shield General Insurance"
+  expected_clause_ids: ["CL-PREMIUM-TABLE#5_00_000"]
+  expected_answer_facts:
+    - {value: "13400", unit: "inr"}
+  expected_not_found: false
+  category: "premium"

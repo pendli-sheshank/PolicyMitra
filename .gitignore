@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+eval/reports/
+
+node_modules/
+.next/
+frontend/out/
+npm-debug.log*
+
+.DS_Store
