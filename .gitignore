@@ -12,5 +12,6 @@ node_modules/
 .next/
 frontend/out/
 npm-debug.log*
+*.tsbuildinfo
 
 .DS_Store
