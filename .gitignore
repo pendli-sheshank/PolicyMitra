@@ -3,7 +3,9 @@ __pycache__/
 .venv/
 venv/
 .env
+.env.local
 .devcontainer/.env.devcontainer
+frontend/.env.local
 .pytest_cache/
 .ruff_cache/
 *.egg-info/
