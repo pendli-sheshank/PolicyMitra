@@ -6,9 +6,9 @@ note_id is guessed."""
 
 from __future__ import annotations
 
+import sqlite3
 from uuid import UUID
 
-import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.deps import get_conn, get_current_agent_id
@@ -40,16 +40,16 @@ def _require_path_matches_identity(agent_id: str, current_agent_id: str) -> None
 def create_note(
     agent_id: str,
     request: ClientNoteCreateRequest,
-    conn: psycopg.Connection = Depends(get_conn),
+    conn: sqlite3.Connection = Depends(get_conn),
     current_agent_id: str = Depends(get_current_agent_id),
 ) -> ClientNoteResponse:
     _require_path_matches_identity(agent_id, current_agent_id)
     with conn.cursor() as cur:
-        cur.execute("INSERT INTO agent.agents (agent_id) VALUES (%s) ON CONFLICT DO NOTHING", (agent_id,))
+        cur.execute("INSERT INTO agent_agents (agent_id) VALUES (?) ON CONFLICT DO NOTHING", (agent_id,))
         cur.execute(
             f"""
-            INSERT INTO agent.client_notes (agent_id, client_ref, note_content, related_draft_id)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO agent_client_notes (agent_id, client_ref, note_content, related_draft_id)
+            VALUES (?, ?, ?, ?)
             RETURNING {_SELECT_COLUMNS}
             """,
             (agent_id, request.client_ref, request.note_content, request.related_draft_id),
@@ -61,13 +61,13 @@ def create_note(
 @router.get("/agent/{agent_id}/notes", response_model=list[ClientNoteResponse])
 def list_notes(
     agent_id: str,
-    conn: psycopg.Connection = Depends(get_conn),
+    conn: sqlite3.Connection = Depends(get_conn),
     current_agent_id: str = Depends(get_current_agent_id),
 ) -> list[ClientNoteResponse]:
     _require_path_matches_identity(agent_id, current_agent_id)
     with conn.cursor() as cur:
         cur.execute(
-            f"SELECT {_SELECT_COLUMNS} FROM agent.client_notes WHERE agent_id = %s ORDER BY created_at DESC",
+            f"SELECT {_SELECT_COLUMNS} FROM agent_client_notes WHERE agent_id = ? ORDER BY created_at DESC",
             (agent_id,),
         )
         rows = cur.fetchall()
@@ -78,12 +78,12 @@ def list_notes(
 def delete_note(
     agent_id: str,
     note_id: UUID,
-    conn: psycopg.Connection = Depends(get_conn),
+    conn: sqlite3.Connection = Depends(get_conn),
     current_agent_id: str = Depends(get_current_agent_id),
 ) -> None:
     _require_path_matches_identity(agent_id, current_agent_id)
     with conn.cursor() as cur:
         cur.execute(
-            "DELETE FROM agent.client_notes WHERE agent_id = %s AND note_id = %s",
+            "DELETE FROM agent_client_notes WHERE agent_id = ? AND note_id = ?",
             (agent_id, note_id),
         )

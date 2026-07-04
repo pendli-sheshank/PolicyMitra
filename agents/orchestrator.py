@@ -4,10 +4,10 @@ regardless of the Guardrail verdict (agents.md: "always log it")."""
 
 from __future__ import annotations
 
+import sqlite3
 from typing import Literal
 from uuid import UUID
 
-import psycopg
 from pydantic import BaseModel
 
 from agents.audit import write_audit_entry
@@ -67,7 +67,7 @@ class DraftingOutcome(BaseModel):
 
 
 def run_qa(
-    conn: psycopg.Connection,
+    conn: sqlite3.Connection,
     router: RouterAgent,
     retrieval_agent: RetrievalAgent,
     qa_agent: QAAgent,
@@ -126,7 +126,7 @@ def run_qa(
 
 
 def run_recommendation(
-    conn: psycopg.Connection,
+    conn: sqlite3.Connection,
     retrieval_agent: RetrievalAgent,
     recommendation_agent: RecommendationAgent,
     guardrail: GuardrailAgent,
@@ -166,7 +166,7 @@ def run_recommendation(
 
 
 def run_comparison(
-    conn: psycopg.Connection,
+    conn: sqlite3.Connection,
     retrieval_agent: RetrievalAgent,
     comparison_agent: ComparisonAgent,
     plans: list[PlanIdentifier],
@@ -190,7 +190,7 @@ def run_comparison(
 
 
 def run_drafting(
-    conn: psycopg.Connection,
+    conn: sqlite3.Connection,
     drafting_agent: DraftingAgent,
     guardrail: GuardrailAgent,
     channel: Literal["email", "whatsapp"],

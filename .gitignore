@@ -4,8 +4,12 @@ __pycache__/
 venv/
 .env
 .env.local
-.devcontainer/.env.devcontainer
 frontend/.env.local
+
+# Embedded SQLite database
+data/
+*.db-wal
+*.db-shm
 .pytest_cache/
 .ruff_cache/
 *.egg-info/

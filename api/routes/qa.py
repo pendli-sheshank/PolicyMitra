@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import psycopg
+import sqlite3
+
 from fastapi import APIRouter, Depends
 
 from agents.guardrail_agent import GuardrailAgent
@@ -24,7 +25,7 @@ router = APIRouter()
 @router.post("/qa", response_model=QAResponse)
 def ask_question(
     request: QARequest,
-    conn: psycopg.Connection = Depends(get_conn),
+    conn: sqlite3.Connection = Depends(get_conn),
     router_agent: RouterAgent = Depends(get_router_agent),
     retrieval_agent: RetrievalAgent = Depends(get_retrieval_agent),
     qa_agent: QAAgent = Depends(get_qa_agent),

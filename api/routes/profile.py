@@ -6,13 +6,14 @@ is set server-side to now() on every create/update, never client-supplied
 from __future__ import annotations
 
 import json
+import sqlite3
 from datetime import UTC, datetime
 
-import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.deps import get_conn
 from api.schemas.profile import ProfileCreateRequest, ProfileResponse
+from db.connection import utc_now_iso
 
 router = APIRouter()
 
@@ -30,25 +31,25 @@ def _row_to_response(row) -> ProfileResponse:
         city_tier=row[4],
         budget_annual_inr=row[5],
         sum_insured_target_inr=row[6],
-        ped_flags=row[7],
+        ped_flags=json.loads(row[7]),
         consent_given_at=row[8],
     )
 
 
 @router.post("/profile/{user_ref}", response_model=ProfileResponse)
-def save_profile(user_ref: str, request: ProfileCreateRequest, conn: psycopg.Connection = Depends(get_conn)) -> ProfileResponse:
+def save_profile(user_ref: str, request: ProfileCreateRequest, conn: sqlite3.Connection = Depends(get_conn)) -> ProfileResponse:
     consent_given_at = datetime.now(UTC)
     with conn.cursor() as cur:
         cur.execute(
             f"""
-            INSERT INTO mem.user_profiles
+            INSERT INTO mem_user_profiles
                 (user_ref, age, dependents, city_tier, budget_annual_inr, sum_insured_target_inr, ped_flags, consent_given_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (user_ref) DO UPDATE SET
                 age = EXCLUDED.age, dependents = EXCLUDED.dependents, city_tier = EXCLUDED.city_tier,
                 budget_annual_inr = EXCLUDED.budget_annual_inr,
                 sum_insured_target_inr = EXCLUDED.sum_insured_target_inr,
-                ped_flags = EXCLUDED.ped_flags, consent_given_at = EXCLUDED.consent_given_at, updated_at = now()
+                ped_flags = EXCLUDED.ped_flags, consent_given_at = EXCLUDED.consent_given_at, updated_at = ?
             RETURNING {_SELECT_COLUMNS}
             """,
             (
@@ -60,6 +61,7 @@ def save_profile(user_ref: str, request: ProfileCreateRequest, conn: psycopg.Con
                 request.sum_insured_target_inr,
                 json.dumps(request.ped_flags),
                 consent_given_at,
+                utc_now_iso(),
             ),
         )
         row = cur.fetchone()
@@ -67,9 +69,9 @@ def save_profile(user_ref: str, request: ProfileCreateRequest, conn: psycopg.Con
 
 
 @router.get("/profile/{user_ref}", response_model=ProfileResponse)
-def get_profile(user_ref: str, conn: psycopg.Connection = Depends(get_conn)) -> ProfileResponse:
+def get_profile(user_ref: str, conn: sqlite3.Connection = Depends(get_conn)) -> ProfileResponse:
     with conn.cursor() as cur:
-        cur.execute(f"SELECT {_SELECT_COLUMNS} FROM mem.user_profiles WHERE user_ref = %s", (user_ref,))
+        cur.execute(f"SELECT {_SELECT_COLUMNS} FROM mem_user_profiles WHERE user_ref = ?", (user_ref,))
         row = cur.fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="Profile not found.")
@@ -77,8 +79,8 @@ def get_profile(user_ref: str, conn: psycopg.Connection = Depends(get_conn)) -> 
 
 
 @router.delete("/profile/{user_ref}", status_code=204)
-def delete_profile(user_ref: str, conn: psycopg.Connection = Depends(get_conn)) -> None:
-    """Hard delete, no soft-delete flag — cascades into mem.recommendation_cache
+def delete_profile(user_ref: str, conn: sqlite3.Connection = Depends(get_conn)) -> None:
+    """Hard delete, no soft-delete flag — cascades into mem_recommendation_cache
     via ON DELETE CASCADE (memory.md: deletion-on-request is first-class)."""
     with conn.cursor() as cur:
-        cur.execute("DELETE FROM mem.user_profiles WHERE user_ref = %s", (user_ref,))
+        cur.execute("DELETE FROM mem_user_profiles WHERE user_ref = ?", (user_ref,))

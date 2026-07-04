@@ -24,10 +24,15 @@ PolicyMitra: a RAG assistant for Indian health insurance with three modules — 
 ## Setup
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt --break-system-packages   # if inside a container without a venv
-cp .env.example .env   # fill in API keys locally, never commit .env
+make setup    # venv + pip install
+make ingest   # chunk + embed the synthetic corpus into data/policymitra.db (embedded SQLite)
+make api      # FastAPI on :8000 — auto-migrates the DB file if missing
 ```
+
+No database server and no `.env` are required — the backend is embedded SQLite. All env
+config is optional (see `.env.example`); LLM keys can come from real env vars (e.g.
+Codespaces secrets) or a local `.env` — never commit `.env`. The DB file lives at
+`data/policymitra.db` (`POLICYMITRA_DB` to override, `make reset-db` to wipe).
 
 ## Non-negotiables (read before touching prompts or retrieval)
 
