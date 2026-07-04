@@ -1,9 +1,12 @@
 """FastAPI app factory. Loads .env before importing anything that reads
 ANTHROPIC_API_KEY at module-import time (api/deps.py caches the LLM client
-once at startup)."""
+once at startup). load_dotenv never overrides real environment variables,
+so keys supplied via GitHub Codespaces secrets (or any exported env var)
+always win over a .env file — a .env is entirely optional."""
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -15,6 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.responses import JSONResponse  # noqa: E402
 
 from agents.base import LLMNotConfiguredError  # noqa: E402
+from api.rate_limit import RateLimitMiddleware  # noqa: E402
 from api.routes import (  # noqa: E402
     agent_notes,
     audit,
@@ -27,12 +31,31 @@ from api.routes import (  # noqa: E402
 )
 
 
+def _cors_origins() -> list[str]:
+    """Restrictive allow-list, no wildcards: localhost for local dev, plus the
+    forwarded frontend origin when running in GitHub Codespaces (both env vars
+    are set automatically by Codespaces)."""
+    origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    codespace = os.environ.get("CODESPACE_NAME")
+    domain = os.environ.get("GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN")
+    if codespace and domain:
+        origins.append(f"https://{codespace}-3000.{domain}")
+    return origins
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="PolicyMitra API", version="0.1.0")
 
+    # Added before CORSMiddleware: Starlette makes the last-added middleware
+    # outermost, so CORS wraps the rate limiter and 429 responses still carry
+    # CORS headers (otherwise the browser couldn't read them).
+    rate_limit = int(os.environ.get("RATE_LIMIT_PER_MINUTE", "30"))
+    if rate_limit > 0:
+        app.add_middleware(RateLimitMiddleware, limit=rate_limit)
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000"],
+        allow_origins=_cors_origins(),
         allow_methods=["*"],
         allow_headers=["*"],
     )

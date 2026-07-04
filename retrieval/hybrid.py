@@ -4,9 +4,8 @@ docs/architecture.md #4), then optionally reranked."""
 
 from __future__ import annotations
 
+import sqlite3
 from uuid import UUID
-
-import psycopg
 
 from ingestion.embedding.base import Embedder
 from retrieval.bm25_index import bm25_search
@@ -27,7 +26,7 @@ def reciprocal_rank_fusion(ranked_lists: list[list[tuple[UUID, float]]], k: int 
 
 
 def hybrid_search(
-    conn: psycopg.Connection,
+    conn: sqlite3.Connection,
     query: str,
     embedder: Embedder,
     k: int = 5,
