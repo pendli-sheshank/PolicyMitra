@@ -7,12 +7,12 @@ migrate:
 	python3 -m db.migrate
 
 ingest:
-	python3 -m ingestion.cli --insurer-dir corpus/insurers/arogya_shield --embedder local
-	python3 -m ingestion.cli --insurer-dir corpus/insurers/suraksha_health --embedder local
-	python3 -m ingestion.cli --insurer-dir corpus/insurers/nirvana_care --embedder local
+	python3 -m ingestion.cli --insurer-dir corpus/insurers/arogya_shield
+	python3 -m ingestion.cli --insurer-dir corpus/insurers/suraksha_health
+	python3 -m ingestion.cli --insurer-dir corpus/insurers/nirvana_care
 
 reset-db:
-	rm -f data/policymitra.db data/policymitra.db-wal data/policymitra.db-shm
+	python3 -m db.migrate --reset
 
 retrieval-eval:
 	python3 -m eval.harness.run_retrieval_eval

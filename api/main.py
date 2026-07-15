@@ -1,8 +1,9 @@
 """FastAPI app factory. Loads .env before importing anything that reads
-ANTHROPIC_API_KEY at module-import time (api/deps.py caches the LLM client
-once at startup). load_dotenv never overrides real environment variables,
-so keys supplied via GitHub Codespaces secrets (or any exported env var)
-always win over a .env file — a .env is entirely optional."""
+GEMINI_API_KEY / OPENAI_API_KEY / DATABASE_URL at module-import time
+(api/deps.py caches the LLM client and embedder once at startup).
+load_dotenv never overrides real environment variables, so values supplied
+via GitHub Codespaces secrets (or any exported env var) always win over a
+.env file."""
 
 from __future__ import annotations
 

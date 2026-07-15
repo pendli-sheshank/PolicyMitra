@@ -1,5 +1,5 @@
 """Pluggable reranker: LexicalOverlapReranker needs no LLM/key and is the
-default; ClaudeReranker is the real path when an LLM client is configured."""
+default; LLMReranker is the real path when an LLM client is configured."""
 
 from __future__ import annotations
 
@@ -100,10 +100,10 @@ class LexicalOverlapReranker:
         return result
 
 
-class ClaudeReranker:
-    """Asks Claude to score relevance 0-1 per candidate, batched. Requires a
-    configured LLMClient (agents/llm_client.py) — only used when a real
-    ANTHROPIC_API_KEY is present."""
+class LLMReranker:
+    """Asks the configured LLM to score relevance 0-1 per candidate, batched.
+    Requires a configured LLMClient (agents/llm_client.py) — only used when a
+    real GEMINI_API_KEY is present."""
 
     def __init__(self, llm_client: Any):
         self.llm_client = llm_client

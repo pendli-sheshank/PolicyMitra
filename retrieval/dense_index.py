@@ -1,64 +1,45 @@
-"""Dense semantic search: brute-force cosine similarity over float32 BLOB
-embeddings, computed in Python. At this corpus size (a few hundred chunks x
-384 dims) a full scan is sub-10ms — an ANN index or numpy would be pure
-overhead (see docs/architecture.md #2)."""
+"""Dense semantic search via pgvector cosine similarity."""
 
 from __future__ import annotations
 
-import heapq
-import math
-import sqlite3
 from uuid import UUID
 
-from db.connection import unpack_vector
+import psycopg
+from pgvector import Vector
+
 from retrieval.models import RetrievalFilters
 
 
 def dense_search(
-    conn: sqlite3.Connection,
+    conn: psycopg.Connection,
     query_embedding: list[float],
     k: int,
     filters: RetrievalFilters | None = None,
+    embedder_name: str | None = None,
 ) -> list[tuple[UUID, float]]:
     filters = filters or RetrievalFilters()
-    conditions = ["d.is_current = 1"]
-    params: dict = {}
+    conditions = ["d.is_current = true"]
+    params: dict = {"qvec": Vector(query_embedding), "k": k}
 
+    if embedder_name:
+        conditions.append("e.embedder_name = %(embedder_name)s")
+        params["embedder_name"] = embedder_name
     if filters.insurer:
-        conditions.append("d.insurer = :insurer")
+        conditions.append("d.insurer = %(insurer)s")
         params["insurer"] = filters.insurer
     if filters.product_name:
-        conditions.append("d.product_name = :product_name")
+        conditions.append("d.product_name = %(product_name)s")
         params["product_name"] = filters.product_name
 
     sql = f"""
-        SELECT e.chunk_id, e.embedding
-        FROM kb_embeddings e
-        JOIN kb_chunks c ON c.chunk_id = e.chunk_id
-        JOIN kb_documents d ON c.doc_id = d.doc_id
+        SELECT e.chunk_id, 1 - (e.embedding <=> %(qvec)s) AS score
+        FROM kb.embeddings e
+        JOIN kb.chunks c ON c.chunk_id = e.chunk_id
+        JOIN kb.documents d ON c.doc_id = d.doc_id
         WHERE {" AND ".join(conditions)}
+        ORDER BY e.embedding <=> %(qvec)s
+        LIMIT %(k)s
     """
-
-    q_norm = math.sqrt(sum(x * x for x in query_embedding))
-    if q_norm == 0.0:
-        return []
-
-    scored: list[tuple[float, UUID]] = []
     with conn.cursor() as cur:
         cur.execute(sql, params)
-        for chunk_id, blob in cur.fetchall():
-            vec = unpack_vector(blob)
-            dot = 0.0
-            norm_sq = 0.0
-            for qx, vx in zip(query_embedding, vec, strict=True):
-                dot += qx * vx
-                norm_sq += vx * vx
-            if norm_sq == 0.0:
-                continue
-            # Full cosine, not just dot product: local hash embeddings are
-            # pre-normalized but external providers' may not be.
-            score = dot / (q_norm * math.sqrt(norm_sq))
-            scored.append((score, UUID(chunk_id)))
-
-    top = heapq.nlargest(k, scored)
-    return [(chunk_id, score) for score, chunk_id in top]
+        return [(row[0], float(row[1])) for row in cur.fetchall()]

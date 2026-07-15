@@ -13,9 +13,9 @@ under the same comparison row regardless of what they call it.
 
 from __future__ import annotations
 
-import sqlite3
 from uuid import UUID
 
+import psycopg
 from pydantic import BaseModel
 
 from agents.retrieval_agent import RetrievalAgent
@@ -50,7 +50,7 @@ class ComparisonTable(BaseModel):
 
 
 class ComparisonAgent:
-    def compare(self, conn: sqlite3.Connection, retrieval_agent: RetrievalAgent, plans: list[PlanIdentifier]) -> ComparisonTable:
+    def compare(self, conn: psycopg.Connection, retrieval_agent: RetrievalAgent, plans: list[PlanIdentifier]) -> ComparisonTable:
         if not 2 <= len(plans) <= 4:
             raise ValueError("Comparison requires between 2 and 4 plans.")
 
@@ -61,7 +61,7 @@ class ComparisonAgent:
 
     def _build_field_row(
         self,
-        conn: sqlite3.Connection,
+        conn: psycopg.Connection,
         retrieval_agent: RetrievalAgent,
         plans: list[PlanIdentifier],
         field: str,
@@ -84,7 +84,7 @@ class ComparisonAgent:
         return ComparisonRow(field=field, values=values, source_chunk_ids=source_chunk_ids)
 
     def _build_exclusions_row(
-        self, conn: sqlite3.Connection, retrieval_agent: RetrievalAgent, plans: list[PlanIdentifier]
+        self, conn: psycopg.Connection, retrieval_agent: RetrievalAgent, plans: list[PlanIdentifier]
     ) -> ComparisonRow:
         values: dict[str, str] = {}
         source_chunk_ids: dict[str, list[UUID]] = {}

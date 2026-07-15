@@ -9,7 +9,7 @@ from pathlib import Path
 import yaml
 
 from db.connection import get_connection
-from ingestion.embedding.local_hash_embedder import LocalHashEmbedder
+from ingestion.embedding import get_default_embedder
 from retrieval.hybrid import hybrid_search
 from retrieval.models import RetrievalFilters
 from retrieval.reranker import LexicalOverlapReranker
@@ -23,7 +23,7 @@ def load_golden_set() -> list[dict]:
 
 def run(k: int = 5) -> dict:
     golden_set = load_golden_set()
-    embedder = LocalHashEmbedder()
+    embedder = get_default_embedder()
     reranker = LexicalOverlapReranker()
 
     total = 0

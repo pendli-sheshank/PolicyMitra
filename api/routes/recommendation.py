@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import sqlite3
-
+import psycopg
 from fastapi import APIRouter, Depends
 
 from agents.guardrail_agent import GuardrailAgent
@@ -28,7 +27,7 @@ router = APIRouter()
 @router.post("/recommend", response_model=RecommendResponse)
 def recommend(
     request: RecommendRequest,
-    conn: sqlite3.Connection = Depends(get_conn),
+    conn: psycopg.Connection = Depends(get_conn),
     retrieval_agent: RetrievalAgent = Depends(get_retrieval_agent),
     recommendation_agent: RecommendationAgent = Depends(get_recommendation_agent),
     guardrail: GuardrailAgent = Depends(get_guardrail_agent),

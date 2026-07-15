@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import sqlite3
-
+import psycopg
 from fastapi import APIRouter, Depends
 
 from agents.drafting_agent import DraftingAgent
@@ -22,7 +21,7 @@ router = APIRouter()
 @router.post("/draft", response_model=DraftResponse)
 def draft(
     request: DraftRequest,
-    conn: sqlite3.Connection = Depends(get_conn),
+    conn: psycopg.Connection = Depends(get_conn),
     drafting_agent: DraftingAgent = Depends(get_drafting_agent),
     guardrail: GuardrailAgent = Depends(get_guardrail_agent),
     agent_id: str = Depends(get_current_agent_id),

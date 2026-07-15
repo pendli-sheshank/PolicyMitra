@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import sqlite3
-
+import psycopg
 from fastapi import APIRouter, Depends
 
 from agents.comparison_agent import ComparisonAgent
@@ -16,7 +15,7 @@ router = APIRouter()
 @router.post("/compare", response_model=CompareResponse)
 def compare(
     request: CompareRequest,
-    conn: sqlite3.Connection = Depends(get_conn),
+    conn: psycopg.Connection = Depends(get_conn),
     retrieval_agent: RetrievalAgent = Depends(get_retrieval_agent),
     comparison_agent: ComparisonAgent = Depends(get_comparison_agent),
 ) -> CompareResponse:

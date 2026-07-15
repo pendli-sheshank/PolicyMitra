@@ -25,14 +25,20 @@ PolicyMitra: a RAG assistant for Indian health insurance with three modules — 
 
 ```bash
 make setup    # venv + pip install
-make ingest   # chunk + embed the synthetic corpus into data/policymitra.db (embedded SQLite)
-make api      # FastAPI on :8000 — auto-migrates the DB file if missing
+make ingest   # chunk + embed the synthetic corpus into Postgres (kb.* schema)
+make api      # FastAPI on :8000 — applies the schema automatically on first connection
 ```
 
-No database server and no `.env` are required — the backend is embedded SQLite. All env
-config is optional (see `.env.example`); LLM keys can come from real env vars (e.g.
-Codespaces secrets) or a local `.env` — never commit `.env`. The DB file lives at
-`data/policymitra.db` (`POLICYMITRA_DB` to override, `make reset-db` to wipe).
+The backend is **Postgres + pgvector** — a Supabase project in the default deployment.
+`DATABASE_URL` is required (use the Supabase *session-pooler* DSN; the direct DB host is
+IPv6-only). Chat LLM is Google Gemini (`GEMINI_API_KEY`), embeddings are OpenAI
+`text-embedding-3-small` (`OPENAI_API_KEY`); without keys the system degrades cleanly
+(503 on generative endpoints, offline hash embedder) — see `.env.example` for every
+variable. Secrets come from real env vars (e.g. Codespaces secrets) or a local `.env` —
+never commit `.env`. `make reset-db` drops and re-applies the four PolicyMitra schemas;
+integration tests need `TEST_DATABASE_URL` (a disposable database). If you change or add
+an embedding provider, re-run `make ingest` — query-time and ingest-time embedders must
+match.
 
 ## Non-negotiables (read before touching prompts or retrieval)
 

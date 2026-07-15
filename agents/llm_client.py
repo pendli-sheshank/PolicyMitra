@@ -1,17 +1,16 @@
-"""Pluggable LLM client: a real provider client (Anthropic or OpenRouter)
-when its API key is configured, else a NullLLMClient that raises a typed
-error rather than crashing (see docs/architecture.md #11).
+"""Pluggable LLM client: a real GeminiClient when GEMINI_API_KEY is
+configured, else a NullLLMClient that raises a typed error rather than
+crashing (see docs/architecture.md #11).
 
-Provider selection (docs/architecture.md #12):
-- LLM_PROVIDER env var explicitly picks "anthropic" or "openrouter".
-- If unset, auto-detects: ANTHROPIC_API_KEY wins if both are set (keeps the
-  original default behavior unchanged for existing users), else
-  OPENROUTER_API_KEY, else no provider at all.
+Provider selection (docs/architecture.md #12, superseded by #14):
+- Google Gemini is the only chat provider. LLM_PROVIDER may be set to
+  "gemini" explicitly (any other value is a hard error); if unset, the
+  client is selected purely by the presence of GEMINI_API_KEY.
 
-OpenRouter (https://openrouter.ai) fronts an OpenAI-compatible chat
-completions API for many providers' models (OpenAI, Google, Meta, Mistral,
-Anthropic itself, and others) behind one API key — this is what lets a user
-choose a different LLM without changing any agent code, just .env.
+Gemini is called over its REST API via httpx — same pattern as the
+OpenAI embedder — so no provider SDK dependency is needed. The agents
+only ever see the LLMClient protocol (system + messages -> LLMResponse);
+Gemini's systemInstruction/contents shape is mapped here and nowhere else.
 """
 
 from __future__ import annotations
@@ -20,102 +19,77 @@ import os
 
 from agents.base import LLMNotConfiguredError, LLMResponse
 
-DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-5"
-DEFAULT_OPENROUTER_MODEL = "openai/gpt-4o-mini"
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
-class AnthropicClient:
-    def __init__(self, api_key: str, model: str = DEFAULT_ANTHROPIC_MODEL):
-        import anthropic
-
-        self._client = anthropic.Anthropic(api_key=api_key)
-        self.model = model
-
-    def complete(self, system: str, messages: list[dict], max_tokens: int = 1024) -> LLMResponse:
-        response = self._client.messages.create(
-            model=self.model,
-            max_tokens=max_tokens,
-            system=system,
-            messages=messages,
-        )
-        text = "".join(block.text for block in response.content if block.type == "text")
-        return LLMResponse(text=text, raw=response.model_dump())
-
-
-class OpenRouterClient:
-    def __init__(self, api_key: str, model: str = DEFAULT_OPENROUTER_MODEL):
+class GeminiClient:
+    def __init__(self, api_key: str, model: str = DEFAULT_GEMINI_MODEL):
         self.api_key = api_key
         self.model = model
 
     def complete(self, system: str, messages: list[dict], max_tokens: int = 1024) -> LLMResponse:
         import httpx
 
+        # Gemini's chat roles are "user" and "model"; the agents speak the
+        # OpenAI-style "user"/"assistant" convention, so map here.
+        contents = [
+            {
+                "role": "model" if m["role"] == "assistant" else "user",
+                "parts": [{"text": m["content"]}],
+            }
+            for m in messages
+        ]
         payload = {
-            "model": self.model,
-            "max_tokens": max_tokens,
-            "messages": [{"role": "system", "content": system}, *messages],
+            "systemInstruction": {"parts": [{"text": system}]},
+            "contents": contents,
+            "generationConfig": {"maxOutputTokens": max_tokens},
         }
         response = httpx.post(
-            OPENROUTER_API_URL,
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-                # Optional attribution headers OpenRouter uses for its public
-                # rankings/rate-limit context — harmless if left as defaults.
-                "HTTP-Referer": os.environ.get("OPENROUTER_SITE_URL", "https://policymitra.local"),
-                "X-Title": "PolicyMitra",
-            },
+            f"{GEMINI_API_BASE}/{self.model}:generateContent",
+            headers={"x-goog-api-key": self.api_key, "Content-Type": "application/json"},
             json=payload,
             timeout=30.0,
         )
         response.raise_for_status()
         data = response.json()
-        text = data["choices"][0]["message"]["content"]
+        parts = data["candidates"][0]["content"].get("parts", [])
+        text = "".join(part.get("text", "") for part in parts)
         return LLMResponse(text=text, raw=data)
 
 
 class NullLLMClient:
     def complete(self, system: str, messages: list[dict], max_tokens: int = 1024) -> LLMResponse:
         raise LLMNotConfiguredError(
-            "No LLM provider is configured (set ANTHROPIC_API_KEY or OPENROUTER_API_KEY in .env); "
+            "No LLM provider is configured (set GEMINI_API_KEY in the environment or .env); "
             "this generative step is unavailable. Callers must degrade (e.g. keyword fallback) "
             "or surface a 503."
         )
 
 
 def _resolve_provider() -> str | None:
-    """Returns "anthropic", "openrouter", or None (nothing usable configured).
-    Raises ValueError only for a garbage LLM_PROVIDER value — a genuine
-    misconfiguration the caller should see immediately, not silently degrade."""
+    """Returns "gemini" or None (nothing usable configured). Raises ValueError
+    only for a garbage LLM_PROVIDER value — a genuine misconfiguration the
+    caller should see immediately, not silently degrade."""
     explicit = os.environ.get("LLM_PROVIDER", "").strip().lower()
-    if explicit in ("anthropic", "openrouter"):
+    if explicit == "gemini":
         return explicit
     if explicit:
-        raise ValueError(f"Unknown LLM_PROVIDER: {explicit!r}. Use 'anthropic' or 'openrouter'.")
+        raise ValueError(f"Unknown LLM_PROVIDER: {explicit!r}. Use 'gemini'.")
 
-    if os.environ.get("ANTHROPIC_API_KEY"):
-        return "anthropic"
-    if os.environ.get("OPENROUTER_API_KEY"):
-        return "openrouter"
+    if os.environ.get("GEMINI_API_KEY"):
+        return "gemini"
     return None
 
 
 def get_llm_client():
     provider = _resolve_provider()
 
-    if provider == "anthropic":
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if provider == "gemini":
+        api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             return NullLLMClient()
-        model = os.environ.get("CLAUDE_MODEL", DEFAULT_ANTHROPIC_MODEL)
-        return AnthropicClient(api_key=api_key, model=model)
-
-    if provider == "openrouter":
-        api_key = os.environ.get("OPENROUTER_API_KEY")
-        if not api_key:
-            return NullLLMClient()
-        model = os.environ.get("OPENROUTER_MODEL", DEFAULT_OPENROUTER_MODEL)
-        return OpenRouterClient(api_key=api_key, model=model)
+        model = os.environ.get("GEMINI_MODEL", DEFAULT_GEMINI_MODEL)
+        return GeminiClient(api_key=api_key, model=model)
 
     return NullLLMClient()

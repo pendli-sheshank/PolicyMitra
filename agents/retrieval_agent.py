@@ -4,8 +4,9 @@ questions (skipped entirely when no LLM client is configured)."""
 
 from __future__ import annotations
 
-import sqlite3
 from typing import Any
+
+import psycopg
 
 from agents.base import LLMNotConfiguredError
 from ingestion.embedding.base import Embedder
@@ -25,7 +26,7 @@ class RetrievalAgent:
 
     def retrieve(
         self,
-        conn: sqlite3.Connection,
+        conn: psycopg.Connection,
         query: str,
         filters: RetrievalFilters | None = None,
         k: int = 5,
