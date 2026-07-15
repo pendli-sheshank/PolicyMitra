@@ -1,8 +1,9 @@
 """The eval acceptance gate (CLAUDE.md non-negotiable #2): run before
-merging any change to chunking, retrieval, or agent prompts. Runs fully
-offline (recall@5, numeric-presence, recommendation ranking accuracy need no
-LLM key); LLM-judged faithfulness switches on automatically the moment
-ANTHROPIC_API_KEY is set — nothing else needs to change."""
+merging any change to chunking, retrieval, or agent prompts. Runs without an
+LLM key (recall@5, numeric-presence, recommendation ranking accuracy);
+LLM-judged faithfulness switches on automatically the moment GEMINI_API_KEY
+is set — nothing else needs to change. A reachable DATABASE_URL is required
+(the corpus lives in Postgres)."""
 
 from __future__ import annotations
 
@@ -21,10 +22,10 @@ def main() -> None:
     results["numeric_presence_offline"] = run_faithfulness_eval.run_offline_numeric_check()
     results["recommendation_ranking"] = run_recommendation_eval.run()
 
-    if os.environ.get("ANTHROPIC_API_KEY"):
+    if os.environ.get("GEMINI_API_KEY"):
         results["llm_judged_faithfulness"] = run_faithfulness_eval.run_llm_judge()
     else:
-        results["llm_judged_faithfulness"] = "SKIPPED (no ANTHROPIC_API_KEY)"
+        results["llm_judged_faithfulness"] = "SKIPPED (no GEMINI_API_KEY)"
 
     report.write(results)
 

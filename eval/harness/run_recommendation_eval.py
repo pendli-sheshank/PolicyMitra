@@ -13,7 +13,7 @@ import yaml
 from agents.recommendation_agent import Profile, RecommendationAgent, build_fact_sheet
 from agents.retrieval_agent import RetrievalAgent
 from db.connection import get_connection
-from ingestion.embedding.local_hash_embedder import LocalHashEmbedder
+from ingestion.embedding import get_default_embedder
 from retrieval.reranker import LexicalOverlapReranker
 
 SCENARIOS_PATH = Path(__file__).parent.parent / "golden_set" / "recommendation_scenarios.yaml"
@@ -25,7 +25,7 @@ def load_scenarios() -> list[dict]:
 
 def run() -> dict:
     scenarios = load_scenarios()
-    retrieval_agent = RetrievalAgent(LocalHashEmbedder(), reranker=LexicalOverlapReranker())
+    retrieval_agent = RetrievalAgent(get_default_embedder(), reranker=LexicalOverlapReranker())
     recommendation_agent = RecommendationAgent(llm_client=None)  # ranking is pure code, no LLM needed
 
     hits = 0

@@ -1,11 +1,13 @@
-"""Deterministic, dependency-free embedder used when no VOYAGE_API_KEY is
+"""Deterministic, dependency-free embedder used when no OPENAI_API_KEY is
 configured (see docs/architecture.md #2 and #11). This is a feature-hashing
 bag-of-words embedding (the classic "hashing trick") — not a learned
 semantic embedding, but it captures word overlap well enough to be a
 meaningful dense signal for a small, distinct-vocabulary corpus, and it
 keeps the rest of the retrieval/eval pipeline fully runnable offline.
 
-Dimension fixed at 384 to match kb.embeddings.embedding VECTOR(384).
+Dimension fixed at 1536 to match kb.embeddings.embedding VECTOR(1536),
+which is sized for the production embedder (OpenAI text-embedding-3-small);
+pgvector allows one fixed dimension per column, so the fallback conforms.
 """
 
 from __future__ import annotations
@@ -14,7 +16,7 @@ import hashlib
 import math
 import re
 
-DIM = 384
+DIM = 1536
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
 
@@ -34,7 +36,7 @@ def _hash_token(token: str) -> tuple[int, float]:
 
 
 class LocalHashEmbedder:
-    name = "local_hash_v1"
+    name = "local_hash_v2"
     dim = DIM
 
     def embed(self, texts: list[str]) -> list[list[float]]:

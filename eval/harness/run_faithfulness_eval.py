@@ -7,7 +7,8 @@ citation-grounded generation to be correct once a real key is added. This
 needs no LLM call at all.
 
 `run_llm_judge` generates real answers via the full agent pipeline and asks
-Claude to score faithfulness 1-5 — only runs when ANTHROPIC_API_KEY is set.
+the configured LLM (Gemini) to score faithfulness 1-5 — only runs when
+GEMINI_API_KEY is set.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ import yaml
 
 from agents.numeric_extraction import NUMERIC_PATTERN, NormalizedClaim, normalize_numeric_token
 from db.connection import get_connection
-from ingestion.embedding.local_hash_embedder import LocalHashEmbedder
+from ingestion.embedding import get_default_embedder
 from retrieval.hybrid import hybrid_search
 from retrieval.models import RetrievalFilters
 from retrieval.reranker import LexicalOverlapReranker
@@ -41,7 +42,7 @@ def _expected_fact_to_claim(fact: dict) -> NormalizedClaim:
 
 def run_offline_numeric_check(k: int = 5) -> dict:
     golden_set = load_golden_set()
-    embedder = LocalHashEmbedder()
+    embedder = get_default_embedder()
     reranker = LexicalOverlapReranker()
 
     total = 0
@@ -76,7 +77,7 @@ def run_offline_numeric_check(k: int = 5) -> dict:
 
 
 def run_llm_judge() -> dict:
-    """Only called by eval/run_all.py when ANTHROPIC_API_KEY is set."""
+    """Only called by eval/run_all.py when GEMINI_API_KEY is set."""
     from agents.guardrail_agent import GuardrailAgent
     from agents.llm_client import get_llm_client
     from agents.orchestrator import run_qa
@@ -88,7 +89,7 @@ def run_llm_judge() -> dict:
     router = RouterAgent(llm_client)
     qa_agent = QAAgent(llm_client)
     guardrail = GuardrailAgent(llm_client)
-    retrieval_agent = RetrievalAgent(LocalHashEmbedder(), reranker=LexicalOverlapReranker(), llm_client=llm_client)
+    retrieval_agent = RetrievalAgent(get_default_embedder(), reranker=LexicalOverlapReranker(), llm_client=llm_client)
 
     golden_set = load_golden_set()
     scored = []

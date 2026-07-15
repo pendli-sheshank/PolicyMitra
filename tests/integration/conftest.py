@@ -1,7 +1,12 @@
-"""Integration test fixtures: a dedicated temp SQLite database file, created
-once per test session, migrated fresh, then ingested with the real synthetic
-corpus so every integration test has real data to work against — no mocking
-of the DB layer."""
+"""Integration test fixtures: a dedicated test database (TEST_DATABASE_URL),
+reset once per test session — the four PolicyMitra schemas are dropped and
+re-migrated, then ingested with the real synthetic corpus so every
+integration test has real data to work against — no mocking of the DB layer.
+
+TEST_DATABASE_URL must point at a Postgres database with pgvector available
+and which is safe to wipe (schemas kb/mem/agent/audit are dropped with
+CASCADE). Without it the integration suite is skipped, keeping `pytest`
+runnable in environments that have no database."""
 
 from __future__ import annotations
 
@@ -12,16 +17,25 @@ import pytest
 
 CORPUS_DIR = Path(__file__).parent.parent.parent / "corpus" / "insurers"
 
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL", "")
+
+if not TEST_DATABASE_URL:
+    collect_ignore_glob = ["*"]
+    pytest.skip(
+        "TEST_DATABASE_URL is not set; skipping integration tests (they need a "
+        "disposable Postgres database with pgvector).",
+        allow_module_level=True,
+    )
+
 
 @pytest.fixture(scope="session", autouse=True)
-def test_database(tmp_path_factory: pytest.TempPathFactory):
-    db_file = tmp_path_factory.mktemp("db") / "policymitra_test.db"
+def test_database():
     # Must be set before the first get_connection() call anywhere in the suite.
-    os.environ["POLICYMITRA_DB"] = str(db_file)
+    os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
     from db.migrate import run_migrations
 
-    run_migrations(db_file)
+    run_migrations(TEST_DATABASE_URL, reset=True)
 
     from ingestion.embedding.local_hash_embedder import LocalHashEmbedder
     from ingestion.pipeline import run_ingestion
@@ -30,7 +44,7 @@ def test_database(tmp_path_factory: pytest.TempPathFactory):
         run_ingestion(insurer_dir, LocalHashEmbedder())
 
     yield
-    # No teardown needed: pytest cleans up the temp directory.
+    # Schemas are left in place for post-mortem inspection; the next run resets them.
 
 
 @pytest.fixture()

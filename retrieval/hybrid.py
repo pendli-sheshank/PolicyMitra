@@ -4,8 +4,9 @@ docs/architecture.md #4), then optionally reranked."""
 
 from __future__ import annotations
 
-import sqlite3
 from uuid import UUID
+
+import psycopg
 
 from ingestion.embedding.base import Embedder
 from retrieval.bm25_index import bm25_search
@@ -26,7 +27,7 @@ def reciprocal_rank_fusion(ranked_lists: list[list[tuple[UUID, float]]], k: int 
 
 
 def hybrid_search(
-    conn: sqlite3.Connection,
+    conn: psycopg.Connection,
     query: str,
     embedder: Embedder,
     k: int = 5,
@@ -36,7 +37,10 @@ def hybrid_search(
 ) -> RetrievalResult:
     bm25_hits = bm25_search(conn, query, candidate_k, filters)
     query_vector = embedder.embed([query])[0]
-    dense_hits = dense_search(conn, query_vector, candidate_k, filters)
+    # The query vector is only comparable to vectors from the same embedder,
+    # so dense search is scoped to rows embedded by this one — a DB that also
+    # holds another embedder's rows can never silently mix spaces.
+    dense_hits = dense_search(conn, query_vector, candidate_k, filters, embedder_name=embedder.name)
 
     fused = reciprocal_rank_fusion([bm25_hits, dense_hits])
     if not fused:

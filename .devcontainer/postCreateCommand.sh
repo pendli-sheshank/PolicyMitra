@@ -1,6 +1,8 @@
 #!/bin/bash
-# One-shot Codespaces/devcontainer setup. No database server, no credentials,
-# no required .env — the backend is embedded SQLite (data/policymitra.db).
+# One-shot Codespaces/devcontainer setup. The backend is Postgres+pgvector
+# (a Supabase project by default) — DATABASE_URL must be supplied as a
+# Codespaces secret (or .env) before migrate/ingest can run, so those steps
+# are skipped when it's missing and re-runnable via `make migrate`/`make ingest`.
 set -e
 
 echo "=== PolicyMitra setup ==="
@@ -10,11 +12,16 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -q -r requirements.txt
 
-echo "--- Database migrate + corpus ingest (embedded SQLite)"
-python3 -m db.migrate
-python3 -m ingestion.cli --insurer-dir corpus/insurers/arogya_shield --embedder local
-python3 -m ingestion.cli --insurer-dir corpus/insurers/suraksha_health --embedder local
-python3 -m ingestion.cli --insurer-dir corpus/insurers/nirvana_care --embedder local
+echo "--- Database migrate + corpus ingest (Postgres via DATABASE_URL)"
+if [ -n "${DATABASE_URL:-}" ]; then
+  python3 -m db.migrate
+  python3 -m ingestion.cli --insurer-dir corpus/insurers/arogya_shield
+  python3 -m ingestion.cli --insurer-dir corpus/insurers/suraksha_health
+  python3 -m ingestion.cli --insurer-dir corpus/insurers/nirvana_care
+else
+  echo "DATABASE_URL is not set — skipping migrate/ingest."
+  echo "Add it as a Codespaces secret, then run: make migrate && make ingest"
+fi
 
 echo "--- Frontend API URL"
 if [ -n "${CODESPACE_NAME:-}" ] && [ -n "${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-}" ]; then
@@ -35,5 +42,5 @@ echo "Run the app:"
 echo "  Terminal 1: make api                  # FastAPI on :8000"
 echo "  Terminal 2: cd frontend && npm run dev  # Next.js on :3000"
 echo ""
-echo "Optional: add ANTHROPIC_API_KEY as a Codespaces secret (or in .env)"
-echo "to enable LLM answer generation — everything else works without it."
+echo "Secrets (Codespaces secrets or .env): DATABASE_URL (required),"
+echo "GEMINI_API_KEY (LLM answers), OPENAI_API_KEY (semantic embeddings)."
